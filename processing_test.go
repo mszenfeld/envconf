@@ -21,7 +21,8 @@ func TestProcess(t *testing.T) {
 
 	assert.ObjectsAreEqual(fieldInfo{Name: "Debug", Env: "DEBUG", Default: true, Required: false}, info[0])
 	assert.ObjectsAreEqual(fieldInfo{Name: "Host", Env: "HOST", Default: nil, Required: false}, info[1])
-	assert.ObjectsAreEqual(fieldInfo{Name: "Port", Env: "PORT", Default: nil, Required: true}, info[2])
+	assert.ObjectsAreEqual(fieldInfo{Name: "Port", Env: "PORT", Default: nil, Required: false}, info[2])
+	assert.ObjectsAreEqual(fieldInfo{Name: "SecretKey", Env: "SECRET_KEY", Default: nil, Required: true}, info[3])
 }
 
 func TestProcess_DifferentTypes(t *testing.T) {
@@ -33,13 +34,19 @@ func TestProcess_DifferentTypes(t *testing.T) {
 		{name: "String", obj: "object", shouldFail: true},
 		{name: "Integer", obj: 10, shouldFail: true},
 		{name: "Boolean", obj: true, shouldFail: true},
+		{name: "Struct", obj: TestConfig{}, shouldFail: true},
+		{name: "Pointer", obj: &TestConfig{}, shouldFail: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info, err := Process(tt.obj)
 
-			assert.ErrorIs(t, ErrInvalidObjectType, err)
+			if tt.shouldFail {
+				assert.ErrorIs(t, ErrInvalidObjectType, err)
+			} else {
+				assert.Nil(t, err)
+			}
 			assert.Empty(t, info)
 		})
 	}

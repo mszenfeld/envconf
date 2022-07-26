@@ -21,7 +21,9 @@ func Process(obj interface{}) ([]fieldInfo, error) {
 		return []fieldInfo{}, err
 	}
 
-	return []fieldInfo{}, nil
+	elem := v.Elem()
+
+	return processFields(elem, elem.Type()) 
 }
 
 func validateObjType(v reflect.Value) error {
@@ -34,4 +36,21 @@ func validateObjType(v reflect.Value) error {
 	}
 
 	return nil
+}
+
+func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
+	fieldInfos := make([]fieldInfo, 0, v.NumField())
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		fType := t.Field(i)
+
+		fieldInfo := fieldInfo{
+			Name: fType.Name,
+		}
+
+		fieldInfos = append(fieldInfos, fieldInfo)
+	}
+
+	return fieldInfos, nil
 }
