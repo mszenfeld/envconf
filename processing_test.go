@@ -1,6 +1,7 @@
 package envconf
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,6 +49,34 @@ func TestProcess_DifferentTypes(t *testing.T) {
 				assert.Nil(t, err)
 			}
 			assert.Empty(t, info)
+		})
+	}
+}
+
+func TestGetEnv(t *testing.T) {
+	conf := struct {
+		Debug     bool
+		SecretKey string
+		Host      string `env:"HOST"`
+		Port      string `env:"APP_PORT"`
+	}{}
+	tests := []struct {
+		name     string
+		fieldIdx int
+		expected string
+	}{
+		{name: "No tag & Simple", fieldIdx: 0, expected: "DEBUG"},
+		{name: "No tag & CamelCase", fieldIdx: 1, expected: "SECRET_KEY"},
+		{name: "With tag & Simple", fieldIdx: 2, expected: "HOST"},
+		{name: "With tag & Custom env", fieldIdx: 3, expected: "APP_PORT"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			typ := reflect.ValueOf(&conf).Elem().Type()
+			fType := typ.Field(tt.fieldIdx)
+
+			assert.Equal(t, tt.expected, getEnv(fType))
 		})
 	}
 }

@@ -3,6 +3,9 @@ package envconf
 import (
 	"errors"
 	"reflect"
+	"strings"
+
+	"github.com/fatih/camelcase"
 )
 
 type fieldInfo struct {
@@ -45,12 +48,31 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 		f := v.Field(i)
 		fType := t.Field(i)
 
+		if !f.CanSet() {
+			continue
+		}
+
 		fieldInfo := fieldInfo{
 			Name: fType.Name,
+			Env: getEnv(fType),
 		}
 
 		fieldInfos = append(fieldInfos, fieldInfo)
 	}
 
 	return fieldInfos, nil
+}
+
+func getEnv(fType reflect.StructField) string {
+	if v := fType.Tag.Get("env"); len(v) > 0 {
+		return v
+	}	
+	
+	var wl []string
+	
+	for _, word := range camelcase.Split(fType.Name) {
+		wl = append(wl, strings.ToUpper(word))
+	}
+
+	return strings.Join(wl, "_")
 }
