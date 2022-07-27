@@ -80,3 +80,31 @@ func TestGetEnv(t *testing.T) {
 		})
 	}
 }
+
+func TestIsRequired(t *testing.T) {
+	conf := struct {
+		Debug     bool
+		SecretKey string `required:"true"`
+		Host      string `required:"false"`
+		Port      string `required:"invalid"`
+	}{}
+	tests := []struct {
+		name     string
+		fieldIdx int
+		expected bool
+	}{
+		{name: "Implicit", fieldIdx: 0, expected: false},
+		{name: "Explicit True", fieldIdx: 1, expected: true},
+		{name: "Explicit False", fieldIdx: 2, expected: false},
+		{name: "Explicit Invalid", fieldIdx: 3, expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			typ := reflect.ValueOf(&conf).Elem().Type()
+			fType := typ.Field(tt.fieldIdx)
+
+			assert.Equal(t, tt.expected, isRequired(fType))
+		})
+	}
+}

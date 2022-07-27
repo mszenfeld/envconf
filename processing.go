@@ -3,6 +3,7 @@ package envconf
 import (
 	"errors"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/camelcase"
@@ -48,6 +49,7 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 		f := v.Field(i)
 		fType := t.Field(i)
 
+		// Skip this field if it's not possible to set it
 		if !f.CanSet() {
 			continue
 		}
@@ -55,6 +57,7 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 		fieldInfo := fieldInfo{
 			Name: fType.Name,
 			Env: getEnv(fType),
+			Required: isRequired(fType),
 		}
 
 		fieldInfos = append(fieldInfos, fieldInfo)
@@ -63,6 +66,11 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 	return fieldInfos, nil
 }
 
+// getEnv returns name of the environment variable associated with the provided
+// struct field.
+// 
+// If provided field has `env` tag, its value will be returned. In other cases
+// function getting name of the environment variable from the field name.
 func getEnv(fType reflect.StructField) string {
 	if v := fType.Tag.Get("env"); len(v) > 0 {
 		return v
@@ -75,4 +83,21 @@ func getEnv(fType reflect.StructField) string {
 	}
 
 	return strings.Join(wl, "_")
+}
+
+func isRequired(fType reflect.StructField) bool {
+	v := fType.Tag.Get("required")
+
+	if len(v) == 0 || !isBool(v) {
+		return false
+	} 
+	isReq, _ := strconv.ParseBool(v)
+
+	return isReq
+}
+
+func isBool(v string) bool {
+	v = strings.ToLower(v)
+
+	return v == "true" || v == "false"
 }
