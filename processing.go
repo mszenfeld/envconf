@@ -9,6 +9,7 @@ import (
 	"github.com/fatih/camelcase"
 )
 
+// fieldInfo is a representation of the struct field.
 type fieldInfo struct {
 	Name string
 	Env string
@@ -19,6 +20,9 @@ type fieldInfo struct {
 
 var ErrInvalidObjectType = errors.New("invalid object type")
 
+// Process extracts information about fields that make up the provided object.
+//
+// If object is not a pointer to the struct, this function will return an error.
 func Process(obj interface{}) ([]fieldInfo, error) {
 	v := reflect.ValueOf(obj)
 
@@ -31,6 +35,7 @@ func Process(obj interface{}) ([]fieldInfo, error) {
 	return processFields(elem, elem.Type()) 
 }
 
+// validateObjType returns error for all kinds except pointer to struct.
 func validateObjType(v reflect.Value) error {
 	if v.Kind() != reflect.Ptr {
 		return ErrInvalidObjectType
@@ -43,6 +48,7 @@ func validateObjType(v reflect.Value) error {
 	return nil
 }
 
+// processFields extracts information about fields from the provided arguments.
 func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 	fieldInfos := make([]fieldInfo, 0, v.NumField())
 
@@ -106,6 +112,12 @@ func isRequired(fType reflect.StructField) bool {
 	return isReq
 }
 
+// isBool returns information if given string is a proper string version of
+// the boolean value.
+//
+// This function returns `true` only for the following values:
+// - true
+// - false
 func isBool(v string) bool {
 	v = strings.ToLower(v)
 

@@ -18,7 +18,7 @@ func TestProcess(t *testing.T) {
 	info, err := Process(&TestConfig{})
 
 	assert.Nil(t, err)
-	assert.Len(t, info, 3)
+	assert.Len(t, info, 4)
 
 	assert.ObjectsAreEqual(fieldInfo{
 		Name:       "Debug",
