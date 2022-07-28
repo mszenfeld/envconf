@@ -12,7 +12,8 @@ import (
 type fieldInfo struct {
 	Name string
 	Env string
-	Default interface{}
+	Default string
+	HasDefault bool
 	Required bool
 }
 
@@ -54,9 +55,13 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 			continue
 		}
 
+		def, hasDef := fType.Tag.Lookup("default")
+
 		fieldInfo := fieldInfo{
 			Name: fType.Name,
 			Env: getEnv(fType),
+			Default: def,
+			HasDefault: hasDef,
 			Required: isRequired(fType),
 		}
 
@@ -85,6 +90,11 @@ func getEnv(fType reflect.StructField) string {
 	return strings.Join(wl, "_")
 }
 
+// isRequired returns bool value with information if provided field is required.
+//
+// By default, fields are optional. Field is required only when `required` tag 
+// was explicitly provided with "true" value. In other cases function will return
+// `false` even if value for `required` tag is invalid.
 func isRequired(fType reflect.StructField) bool {
 	v := fType.Tag.Get("required")
 

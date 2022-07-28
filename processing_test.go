@@ -20,10 +20,34 @@ func TestProcess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, info, 3)
 
-	assert.ObjectsAreEqual(fieldInfo{Name: "Debug", Env: "DEBUG", Default: true, Required: false}, info[0])
-	assert.ObjectsAreEqual(fieldInfo{Name: "Host", Env: "HOST", Default: nil, Required: false}, info[1])
-	assert.ObjectsAreEqual(fieldInfo{Name: "Port", Env: "PORT", Default: nil, Required: false}, info[2])
-	assert.ObjectsAreEqual(fieldInfo{Name: "SecretKey", Env: "SECRET_KEY", Default: nil, Required: true}, info[3])
+	assert.ObjectsAreEqual(fieldInfo{
+		Name:       "Debug",
+		Env:        "DEBUG",
+		Default:    "true",
+		HasDefault: true,
+		Required:   false,
+	}, info[0])
+	assert.ObjectsAreEqual(fieldInfo{
+		Name:       "Host",
+		Env:        "HOST",
+		Default:    "",
+		HasDefault: false,
+		Required:   false,
+	}, info[1])
+	assert.ObjectsAreEqual(fieldInfo{
+		Name:       "Port",
+		Env:        "PORT",
+		Default:    "",
+		HasDefault: false,
+		Required:   false,
+	}, info[2])
+	assert.ObjectsAreEqual(fieldInfo{
+		Name:       "SecretKey",
+		Env:        "SECRET_KEY",
+		Default:    "",
+		HasDefault: false,
+		Required:   true,
+	}, info[3])
 }
 
 func TestProcess_DifferentTypes(t *testing.T) {
@@ -58,7 +82,7 @@ func TestGetEnv(t *testing.T) {
 		Debug     bool
 		SecretKey string
 		Host      string `env:"HOST"`
-		Port      string `env:"APP_PORT"`
+		Port      int    `env:"APP_PORT"`
 	}{}
 	tests := []struct {
 		name     string
@@ -81,12 +105,44 @@ func TestGetEnv(t *testing.T) {
 	}
 }
 
+func TestGetDefault(t *testing.T) {
+	conf := struct {
+		Debug     bool `default:"true"`
+		SecretKey string
+		Host      string `default:"localhost"`
+		AppName   string `default:""`
+	}{}
+	tests := []struct {
+		name       string
+		fieldIdx   int
+		expected   string
+		hasDefault bool
+	}{
+		{name: "Bool default", fieldIdx: 0, expected: "true", hasDefault: true},
+		{name: "No default", fieldIdx: 1, expected: "", hasDefault: false},
+		{name: "String default", fieldIdx: 2, expected: "localhost", hasDefault: true},
+		{name: "Empty default", fieldIdx: 3, expected: "", hasDefault: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			typ := reflect.ValueOf(&conf).Elem().Type()
+			fType := typ.Field(tt.fieldIdx)
+
+			def, hasDef := fType.Tag.Lookup("default")
+
+			assert.Equal(t, tt.expected, def)
+			assert.Equal(t, tt.hasDefault, hasDef)
+		})
+	}
+}
+
 func TestIsRequired(t *testing.T) {
 	conf := struct {
 		Debug     bool
 		SecretKey string `required:"true"`
 		Host      string `required:"false"`
-		Port      string `required:"invalid"`
+		Port      int    `required:"invalid"`
 	}{}
 	tests := []struct {
 		name     string
