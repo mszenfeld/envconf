@@ -29,6 +29,26 @@ func TestLoader_Load__Success(t *testing.T) {
 	assert.Equal(t, "localhost", c.Host)
 }
 
+func TestLoader_Load_InvalidObjectType(t *testing.T) {
+	tests := []struct {
+		name   string
+		object interface{}
+	}{
+		{name: "String", object: "string"},
+		{name: "Integer", object: 1337},
+		{name: "Struct", object: Config{}},
+		{name: "Slice", object: []Config{Config{}, Config{}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewLoader().Load(tt.object)
+
+			assert.ErrorIs(t, ErrInvalidObjectType, err)
+		})
+	}
+}
+
 func TestLoader_Load__WithPrefix(t *testing.T) {
 	var c Config
 
@@ -87,4 +107,49 @@ func TestLoader_Load__MissingValue(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", c.Host)
+}
+
+func TestGetEnvValue_MissingRequiredField(t *testing.T) {
+	os.Clearenv()
+
+	fi := fieldInfo{
+		Name:     "Field",
+		Env:      "FIELD",
+		Required: true,
+	}
+	_, err := getEnvValue("", fi)
+
+	assert.Error(t, err)
+}
+
+func TestGetEnvValue_MissingWithDefault(t *testing.T) {
+	os.Clearenv()
+
+	fi := fieldInfo{
+		Name:       "Field",
+		Env:        "FIELD",
+		HasDefault: true,
+		Default:    "MyDefaultValue",
+	}
+	v, err := getEnvValue("", fi)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "MyDefaultValue", v)
+}
+
+func TestLoader_loadField__MissingValue(t *testing.T) {
+	os.Clearenv()
+
+	fi := fieldInfo{
+		Name: "Field",
+		Env:  "FIELD",
+	}
+	v, err := getEnvValue("", fi)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "", v)
+}
+
+func TestLoader_loadField(t *testing.T) {
+
 }
