@@ -2,6 +2,7 @@ package envconf
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -137,6 +138,41 @@ func TestGetEnvValue_MissingWithDefault(t *testing.T) {
 	assert.Equal(t, "MyDefaultValue", v)
 }
 
+func TestSetFieldValue_UnsupportedType(t *testing.T) {
+
+}
+
+func TestSetFieldValue_InvalidType(t *testing.T) {
+
+}
+
+func TestSetFieldValue(t *testing.T) {
+	c := struct {
+		Host  string
+		Port  int
+		Debug bool
+	}{}
+	tests := []struct {
+		name      string
+		fieldName string
+		value     interface{}
+	}{
+		{name: "String", fieldName: "Host", value: "localhost"},
+		{name: "Integer", fieldName: "Port", value: int64(1337)},
+		{name: "Boolean", fieldName: "Debug", value: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := reflect.ValueOf(&c).Elem().FieldByName(tt.fieldName)
+			err := setFieldValue(f, tt.value)
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.value, getFieldValue(f))
+		})
+	}
+}
+
 func TestLoader_loadField__MissingValue(t *testing.T) {
 	os.Clearenv()
 
@@ -150,6 +186,25 @@ func TestLoader_loadField__MissingValue(t *testing.T) {
 	assert.Equal(t, "", v)
 }
 
+func TestLoader_loadField__UnsupportedType(t *testing.T) {
+
+}
+
 func TestLoader_loadField(t *testing.T) {
 
+}
+
+func getFieldValue(f reflect.Value) interface{} {
+	switch f.Kind() {
+	case reflect.String:
+		return f.String()
+
+	case reflect.Int:
+		return f.Int()
+
+	case reflect.Bool:
+		return f.Bool()
+	}
+
+	return nil
 }

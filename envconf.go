@@ -46,6 +46,13 @@ func (l *Loader) loadField(obj interface{}, fi fieldInfo) error {
 	return nil
 }
 
+// getEnvValue looks for proper environment variable and gets it value.
+//
+// If environment variable is not available, but default value was provided,
+// function will return it. In other cases it will return empty string.
+//
+// If value is required but environment variable does not exist, function will
+// return an error.
 func getEnvValue(prefix string, fi fieldInfo) (string, error) {
 	envName := fi.Env
 	if len(prefix) > 0 {
@@ -63,4 +70,19 @@ func getEnvValue(prefix string, fi fieldInfo) (string, error) {
 	}
 
 	return v, nil
+}
+
+func setFieldValue(f reflect.Value, v interface{}) error {
+	switch f.Kind() {
+	case reflect.String:
+		f.SetString(v.(string))
+
+	case reflect.Int:
+		f.SetInt(v.(int64))
+
+	case reflect.Bool:
+		f.SetBool(v.(bool))
+	}
+
+	return nil
 }
