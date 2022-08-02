@@ -110,6 +110,19 @@ func TestLoader_Load__MissingValue(t *testing.T) {
 	assert.Equal(t, "", c.Host)
 }
 
+func TestGetEnvValue_MissingValue(t *testing.T) {
+	os.Clearenv()
+
+	fi := fieldInfo{
+		Name: "Field",
+		Env:  "FIELD",
+	}
+	v, err := getEnvValue("", fi)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "", v)
+}
+
 func TestGetEnvValue_MissingRequiredField(t *testing.T) {
 	os.Clearenv()
 
@@ -194,22 +207,60 @@ func TestSetFieldValue(t *testing.T) {
 func TestLoader_loadField__MissingValue(t *testing.T) {
 	os.Clearenv()
 
-	fi := fieldInfo{
-		Name: "Field",
-		Env:  "FIELD",
-	}
-	v, err := getEnvValue("", fi)
+	c := struct {
+		Host  string
+		Port  int
+		Debug bool
+	}{}
+	l := NewLoader()
+
+	err := l.loadField(&c, fieldInfo{
+		Name: "Host",
+		Env:  "HOST",
+	})
 
 	assert.Nil(t, err)
-	assert.Equal(t, "", v)
+	assert.Equal(t, "", c.Host)
 }
 
 func TestLoader_loadField__UnsupportedType(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("HOSTS", "192.168.0.1,192.168.0.2")
 
+	c := struct {
+		Hosts []string
+		Port  int
+		Debug bool
+	}{}
+	l := NewLoader()
+
+	err := l.loadField(&c, fieldInfo{
+		Name: "Hosts",
+		Env:  "HOSTS",
+	})
+
+	assert.Error(t, err)
+	assert.Empty(t, c.Hosts)
 }
 
 func TestLoader_loadField__InvalidValueType(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("DEBUG", "invalid")
 
+	c := struct {
+		Host  string
+		Port  int
+		Debug bool
+	}{}
+	l := NewLoader()
+
+	err := l.loadField(&c, fieldInfo{
+		Name: "Debug",
+		Env:  "DEBUG",
+	})
+
+	assert.Error(t, err)
+	assert.Zero(t, c.Debug)
 }
 
 func TestLoader_loadField(t *testing.T) {
