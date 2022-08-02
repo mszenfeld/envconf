@@ -139,11 +139,28 @@ func TestGetEnvValue_MissingWithDefault(t *testing.T) {
 }
 
 func TestSetFieldValue_UnsupportedType(t *testing.T) {
+	c := struct {
+		Hosts []string
+	}{}
+	f := reflect.ValueOf(&c).Elem().Field(0)
 
+	err := setFieldValue(f, "localhost,192.160.0.1")
+
+	assert.ErrorIs(t, ErrUnsupportedType, err)
 }
 
 func TestSetFieldValue_InvalidType(t *testing.T) {
+	c := struct {
+		Host  string
+		Port  int
+		Debug bool
+	}{}
+	f := reflect.ValueOf(&c).Elem().Field(2)
 
+	err := setFieldValue(f, "10")
+
+	assert.Error(t, err)
+	assert.Equal(t, "", c.Host)
 }
 
 func TestSetFieldValue(t *testing.T) {
@@ -153,13 +170,14 @@ func TestSetFieldValue(t *testing.T) {
 		Debug bool
 	}{}
 	tests := []struct {
-		name      string
-		fieldName string
-		value     interface{}
+		name          string
+		fieldName     string
+		value         string
+		expectedValue interface{}
 	}{
-		{name: "String", fieldName: "Host", value: "localhost"},
-		{name: "Integer", fieldName: "Port", value: int64(1337)},
-		{name: "Boolean", fieldName: "Debug", value: true},
+		{name: "String", fieldName: "Host", value: "localhost", expectedValue: "localhost"},
+		{name: "Integer", fieldName: "Port", value: "1337", expectedValue: int64(1337)},
+		{name: "Boolean", fieldName: "Debug", value: "true", expectedValue: true},
 	}
 
 	for _, tt := range tests {
@@ -168,7 +186,7 @@ func TestSetFieldValue(t *testing.T) {
 			err := setFieldValue(f, tt.value)
 
 			assert.Nil(t, err)
-			assert.Equal(t, tt.value, getFieldValue(f))
+			assert.Equal(t, tt.expectedValue, getFieldValue(f))
 		})
 	}
 }
@@ -187,6 +205,10 @@ func TestLoader_loadField__MissingValue(t *testing.T) {
 }
 
 func TestLoader_loadField__UnsupportedType(t *testing.T) {
+
+}
+
+func TestLoader_loadField__InvalidValueType(t *testing.T) {
 
 }
 

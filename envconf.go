@@ -1,20 +1,27 @@
 package envconf
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 )
+
+var ErrUnsupportedType = errors.New("unsupported field type")
 
 type Loader struct {
 	prefix string
 }
 
+// NewLoader creates a new instance of the `Loader`.
 func NewLoader() *Loader {
 	return &Loader{}
 }
 
+// Load loads values from the environment variables and pass them to the
+// provided object.
 func (l *Loader) Load(obj interface{}) error {
 	fieldInfos, err := Process(obj)
 	if err != nil {
@@ -22,24 +29,34 @@ func (l *Loader) Load(obj interface{}) error {
 	}
 
 	for i := 0; i < len(fieldInfos); i++ {
-		l.loadField(obj, fieldInfos[i])
+		if err = l.loadField(obj, fieldInfos[i]); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
+// SetPrefix sets a new value for `prefix`.
 func (l *Loader) SetPrefix(p string) {
 	l.prefix = strings.ToUpper(p)
 }
 
+// Prefix returns current `prefix` value.
 func (l *Loader) Prefix() string {
 	return l.prefix
 }
 
+// loadField gets a value of the environment variable and sets it to the field.
 func (l *Loader) loadField(obj interface{}, fi fieldInfo) error {
-	reflect.ValueOf(obj).Elem().FieldByName(fi.Name)
-	_, err := getEnvValue(l.prefix, fi)
+	f := reflect.ValueOf(obj).Elem().FieldByName(fi.Name)
+
+	v, err := getEnvValue(l.prefix, fi)
 	if err != nil {
+		return err
+	}
+
+	if err = setFieldValue(f, v); err != nil {
 		return err
 	}
 
@@ -72,16 +89,32 @@ func getEnvValue(prefix string, fi fieldInfo) (string, error) {
 	return v, nil
 }
 
-func setFieldValue(f reflect.Value, v interface{}) error {
+// setFieldValue sets value to the provided field.
+//
+// It's detecting kind of the provided field and cast received string according
+// to it. If it is not possible to cast string `s` to the proper value, function
+// will return an error.
+func setFieldValue(f reflect.Value, s string) error {
 	switch f.Kind() {
 	case reflect.String:
-		f.SetString(v.(string))
+		f.SetString(s)
 
-	case reflect.Int:
-		f.SetInt(v.(int64))
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v, err := strconv.ParseInt(s, 0, f.Type().Bits())
+		if err != nil {
+			return err
+		}
+		f.SetInt(v)
 
 	case reflect.Bool:
-		f.SetBool(v.(bool))
+		v, err := strconv.ParseBool(s)
+		if err != nil {
+			return err
+		}
+		f.SetBool(v)
+
+	default:
+		return ErrUnsupportedType
 	}
 
 	return nil
