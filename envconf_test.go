@@ -19,7 +19,11 @@ type ConfigWithSecret struct {
 }
 
 func TestLoader_Load__Success(t *testing.T) {
-	var c Config
+	c := struct {
+		Debug bool   `env:"DEBUG" default:"true"`
+		Host  string `env:"HOST"`
+		Port  int
+	}{}
 
 	os.Clearenv()
 	os.Setenv("HOST", "localhost")
@@ -38,7 +42,7 @@ func TestLoader_Load_InvalidObjectType(t *testing.T) {
 		{name: "String", object: "string"},
 		{name: "Integer", object: 1337},
 		{name: "Struct", object: Config{}},
-		{name: "Slice", object: []Config{Config{}, Config{}}},
+		{name: "Slice", object: []Config{{}, {}}},
 	}
 
 	for _, tt := range tests {
@@ -264,7 +268,54 @@ func TestLoader_loadField__InvalidValueType(t *testing.T) {
 }
 
 func TestLoader_loadField(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "1337")
+	os.Setenv("DEBUG", "true")
+	os.Setenv("PROCS", "3")
 
+	c := struct {
+		Host  string
+		Port  int
+		Debug bool
+		Procs int8
+	}{}
+	l := NewLoader()
+	tests := []struct {
+		name     string
+		fi       fieldInfo
+		expected interface{}
+	}{
+		{
+			name:     "String",
+			fi:       fieldInfo{Name: "Host", Env: "HOST"},
+			expected: "localhost",
+		},
+		{
+			name:     "Integer",
+			fi:       fieldInfo{Name: "Port", Env: "PORT"},
+			expected: int64(1337),
+		},
+		{
+			name:     "Boolean",
+			fi:       fieldInfo{Name: "Debug", Env: "DEBUG"},
+			expected: true,
+		},
+		{
+			name:     "Integer8",
+			fi:       fieldInfo{Name: "Procs", Env: "PROCS"},
+			expected: int64(3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := reflect.ValueOf(&c).Elem().FieldByName(tt.fi.Name)
+
+			assert.Nil(t, l.loadField(&c, tt.fi))
+			assert.Equal(t, tt.expected, getFieldValue(f))
+		})
+	}
 }
 
 func getFieldValue(f reflect.Value) interface{} {
@@ -272,7 +323,7 @@ func getFieldValue(f reflect.Value) interface{} {
 	case reflect.String:
 		return f.String()
 
-	case reflect.Int:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return f.Int()
 
 	case reflect.Bool:

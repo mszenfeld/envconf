@@ -100,6 +100,11 @@ func setFieldValue(f reflect.Value, s string) error {
 		f.SetString(s)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		// If string is empty use zero
+		if len(s) == 0 {
+			s = "0"
+		}
+
 		v, err := strconv.ParseInt(s, 0, f.Type().Bits())
 		if err != nil {
 			return err
