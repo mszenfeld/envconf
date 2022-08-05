@@ -202,7 +202,7 @@ func TestLoader_loadField(t *testing.T) {
 }
 
 func getFieldValue(f reflect.Value) any {
-	switch f.Kind() { // nolint:exhaustive // There is no need to include all missing reflect cases
+	switch f.Kind() { //nolint:exhaustive // There is no need to include all missing reflect cases
 	case reflect.String:
 		return f.String()
 
