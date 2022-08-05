@@ -30,7 +30,7 @@ func TestLoader_Load_InvalidObjectType(t *testing.T) {
 	}
 
 	tests := []struct {
-		object interface{}
+		object any
 		name   string
 	}{
 		{name: "String", object: "string"},

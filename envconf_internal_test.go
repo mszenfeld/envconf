@@ -78,7 +78,7 @@ func TestSetFieldValue(t *testing.T) {
 		Ratio float32
 	}{}
 	tests := []struct {
-		expectedValue interface{}
+		expectedValue any
 		name          string
 		fieldName     string
 		value         string

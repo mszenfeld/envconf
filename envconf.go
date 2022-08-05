@@ -24,7 +24,7 @@ func NewLoader() *Loader {
 
 // Load loads values from the environment variables and pass them to the
 // provided object.
-func (l *Loader) Load(obj interface{}) error {
+func (l *Loader) Load(obj any) error {
 	fieldInfos, err := processing.Process(obj)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (l *Loader) Prefix() string {
 }
 
 // loadField gets a value of the environment variable and sets it to the field.
-func (l *Loader) loadField(obj interface{}, fi processing.FieldInfo) error {
+func (l *Loader) loadField(obj any, fi processing.FieldInfo) error {
 	f := reflect.ValueOf(obj).Elem().FieldByName(fi.Name)
 
 	v, err := getEnvValue(l.prefix, fi)

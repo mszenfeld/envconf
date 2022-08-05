@@ -23,7 +23,7 @@ var ErrInvalidObjectType = errors.New("invalid object type")
 // Process extracts information about fields that make up the provided object.
 //
 // If object is not a pointer to the struct, this function will return an error.
-func Process(obj interface{}) ([]FieldInfo, error) {
+func Process(obj any) ([]FieldInfo, error) {
 	v := reflect.ValueOf(obj)
 
 	if err := validateObjType(v); err != nil {

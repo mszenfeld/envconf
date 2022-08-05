@@ -52,7 +52,7 @@ func TestProcess(t *testing.T) {
 
 func TestProcess_DifferentTypes(t *testing.T) {
 	tests := []struct {
-		obj        interface{}
+		obj        any
 		name       string
 		shouldFail bool
 	}{
