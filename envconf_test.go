@@ -1,33 +1,20 @@
 package envconf
 
 import (
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type Config struct {
-	Debug bool   `env:"DEBUG" default:"true"`
-	Host  string `env:"HOST"`
-	Port  int
-}
-
-type ConfigWithSecret struct {
-	SecretKey string `required:"true"`
-}
-
 func TestLoader_Load__Success(t *testing.T) {
+	t.Setenv("HOST", "localhost")
+
 	c := struct {
-		Debug bool   `env:"DEBUG" default:"true"`
 		Host  string `env:"HOST"`
 		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
 	}{}
-
-	os.Clearenv()
-	os.Setenv("HOST", "localhost")
-
 	err := NewLoader().Load(&c)
 
 	assert.Nil(t, err)
@@ -35,14 +22,20 @@ func TestLoader_Load__Success(t *testing.T) {
 }
 
 func TestLoader_Load_InvalidObjectType(t *testing.T) {
+	type conf struct {
+		Host  string `env:"HOST"`
+		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
+	}
+
 	tests := []struct {
-		name   string
 		object interface{}
+		name   string
 	}{
 		{name: "String", object: "string"},
 		{name: "Integer", object: 1337},
-		{name: "Struct", object: Config{}},
-		{name: "Slice", object: []Config{{}, {}}},
+		{name: "Struct", object: conf{}},
+		{name: "Slice", object: []conf{{}, {}}},
 	}
 
 	for _, tt := range tests {
@@ -55,12 +48,14 @@ func TestLoader_Load_InvalidObjectType(t *testing.T) {
 }
 
 func TestLoader_Load__WithPrefix(t *testing.T) {
-	var c Config
+	t.Setenv("HOST", "127.0.0.1")
+	t.Setenv("APP_HOST", "192.168.0.1")
 
-	os.Clearenv()
-	os.Setenv("HOST", "127.0.0.1")
-	os.Setenv("APP_HOST", "192.168.0.1")
-
+	c := struct {
+		Host  string `env:"HOST"`
+		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
+	}{}
 	loader := NewLoader()
 	loader.SetPrefix("app")
 
@@ -71,10 +66,11 @@ func TestLoader_Load__WithPrefix(t *testing.T) {
 }
 
 func TestLoader_Load__DefaultValue(t *testing.T) {
-	var c Config
-
-	os.Clearenv()
-
+	c := struct {
+		Host  string `env:"HOST"`
+		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
+	}{}
 	err := NewLoader().Load(&c)
 
 	assert.Nil(t, err)
@@ -82,11 +78,13 @@ func TestLoader_Load__DefaultValue(t *testing.T) {
 }
 
 func TestLoader_Load__NoEnvTag(t *testing.T) {
-	var c Config
+	t.Setenv("PORT", "1337")
 
-	os.Clearenv()
-	os.Setenv("PORT", "1337")
-
+	c := struct {
+		Host  string `env:"HOST"`
+		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
+	}{}
 	err := NewLoader().Load(&c)
 
 	assert.Nil(t, err)
@@ -94,20 +92,20 @@ func TestLoader_Load__NoEnvTag(t *testing.T) {
 }
 
 func TestLoader_Load__RequiredFieldIsMissing(t *testing.T) {
-	var cws ConfigWithSecret
-
-	os.Clearenv()
-
-	err := NewLoader().Load(&cws)
+	c := struct {
+		SecretKey string `required:"true"`
+	}{}
+	err := NewLoader().Load(&c)
 
 	assert.Error(t, err)
 }
 
 func TestLoader_Load__MissingValue(t *testing.T) {
-	var c Config
-
-	os.Clearenv()
-
+	c := struct {
+		Host  string `env:"HOST"`
+		Port  int
+		Debug bool `env:"DEBUG" default:"true"`
+	}{}
 	err := NewLoader().Load(&c)
 
 	assert.Nil(t, err)
@@ -115,8 +113,6 @@ func TestLoader_Load__MissingValue(t *testing.T) {
 }
 
 func TestGetEnvValue_MissingValue(t *testing.T) {
-	os.Clearenv()
-
 	fi := fieldInfo{
 		Name: "Field",
 		Env:  "FIELD",
@@ -128,8 +124,6 @@ func TestGetEnvValue_MissingValue(t *testing.T) {
 }
 
 func TestGetEnvValue_MissingRequiredField(t *testing.T) {
-	os.Clearenv()
-
 	fi := fieldInfo{
 		Name:     "Field",
 		Env:      "FIELD",
@@ -141,8 +135,6 @@ func TestGetEnvValue_MissingRequiredField(t *testing.T) {
 }
 
 func TestGetEnvValue_MissingWithDefault(t *testing.T) {
-	os.Clearenv()
-
 	fi := fieldInfo{
 		Name:       "Field",
 		Env:        "FIELD",
@@ -187,10 +179,10 @@ func TestSetFieldValue(t *testing.T) {
 		Debug bool
 	}{}
 	tests := []struct {
+		expectedValue interface{}
 		name          string
 		fieldName     string
 		value         string
-		expectedValue interface{}
 	}{
 		{name: "String", fieldName: "Host", value: "localhost", expectedValue: "localhost"},
 		{name: "Integer", fieldName: "Port", value: "1337", expectedValue: int64(1337)},
@@ -209,8 +201,6 @@ func TestSetFieldValue(t *testing.T) {
 }
 
 func TestLoader_loadField__MissingValue(t *testing.T) {
-	os.Clearenv()
-
 	c := struct {
 		Host  string
 		Port  int
@@ -228,8 +218,7 @@ func TestLoader_loadField__MissingValue(t *testing.T) {
 }
 
 func TestLoader_loadField__UnsupportedType(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("HOSTS", "192.168.0.1,192.168.0.2")
+	t.Setenv("HOSTS", "192.168.0.1,192.168.0.2")
 
 	c := struct {
 		Hosts []string
@@ -248,8 +237,7 @@ func TestLoader_loadField__UnsupportedType(t *testing.T) {
 }
 
 func TestLoader_loadField__InvalidValueType(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("DEBUG", "invalid")
+	t.Setenv("DEBUG", "invalid")
 
 	c := struct {
 		Host  string
@@ -268,11 +256,10 @@ func TestLoader_loadField__InvalidValueType(t *testing.T) {
 }
 
 func TestLoader_loadField(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("HOST", "localhost")
-	os.Setenv("PORT", "1337")
-	os.Setenv("DEBUG", "true")
-	os.Setenv("PROCS", "3")
+	t.Setenv("HOST", "localhost")
+	t.Setenv("PORT", "1337")
+	t.Setenv("DEBUG", "true")
+	t.Setenv("PROCS", "3")
 
 	c := struct {
 		Host  string
@@ -282,9 +269,9 @@ func TestLoader_loadField(t *testing.T) {
 	}{}
 	l := NewLoader()
 	tests := []struct {
+		expected any
 		name     string
 		fi       fieldInfo
-		expected interface{}
 	}{
 		{
 			name:     "String",
@@ -318,8 +305,8 @@ func TestLoader_loadField(t *testing.T) {
 	}
 }
 
-func getFieldValue(f reflect.Value) interface{} {
-	switch f.Kind() {
+func getFieldValue(f reflect.Value) any {
+	switch f.Kind() { // nolint:exhaustive // There is no need to include all missing reflect cases
 	case reflect.String:
 		return f.String()
 
@@ -328,7 +315,8 @@ func getFieldValue(f reflect.Value) interface{} {
 
 	case reflect.Bool:
 		return f.Bool()
-	}
 
-	return nil
+	default:
+		return nil
+	}
 }

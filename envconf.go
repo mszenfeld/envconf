@@ -95,7 +95,7 @@ func getEnvValue(prefix string, fi fieldInfo) (string, error) {
 // to it. If it is not possible to cast string `s` to the proper value, function
 // will return an error.
 func setFieldValue(f reflect.Value, s string) error {
-	switch f.Kind() {
+	switch f.Kind() { // nolint:exhaustive // There is no need to include all missing reflect cases
 	case reflect.String:
 		f.SetString(s)
 

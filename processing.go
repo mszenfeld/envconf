@@ -11,11 +11,11 @@ import (
 
 // fieldInfo is a representation of the struct field.
 type fieldInfo struct {
-	Name string
-	Env string
-	Default string
+	Name       string
+	Env        string
+	Default    string
 	HasDefault bool
-	Required bool
+	Required   bool
 }
 
 var ErrInvalidObjectType = errors.New("invalid object type")
@@ -32,7 +32,7 @@ func Process(obj interface{}) ([]fieldInfo, error) {
 
 	elem := v.Elem()
 
-	return processFields(elem, elem.Type()) 
+	return processFields(elem, elem.Type())
 }
 
 // validateObjType returns error for all kinds except pointer to struct.
@@ -62,16 +62,15 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 		}
 
 		def, hasDef := fType.Tag.Lookup("default")
-
-		fieldInfo := fieldInfo{
-			Name: fType.Name,
-			Env: getEnv(fType),
-			Default: def,
+		fi := fieldInfo{
+			Name:       fType.Name,
+			Env:        getEnv(fType),
+			Default:    def,
 			HasDefault: hasDef,
-			Required: isRequired(fType),
+			Required:   isRequired(fType),
 		}
 
-		fieldInfos = append(fieldInfos, fieldInfo)
+		fieldInfos = append(fieldInfos, fi)
 	}
 
 	return fieldInfos, nil
@@ -79,16 +78,16 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 
 // getEnv returns name of the environment variable associated with the provided
 // struct field.
-// 
+//
 // If provided field has `env` tag, its value will be returned. In other cases
 // function getting name of the environment variable from the field name.
 func getEnv(fType reflect.StructField) string {
 	if v := fType.Tag.Get("env"); len(v) > 0 {
 		return v
-	}	
-	
+	}
+
 	var wl []string
-	
+
 	for _, word := range camelcase.Split(fType.Name) {
 		wl = append(wl, strings.ToUpper(word))
 	}
@@ -98,7 +97,7 @@ func getEnv(fType reflect.StructField) string {
 
 // isRequired returns bool value with information if provided field is required.
 //
-// By default, fields are optional. Field is required only when `required` tag 
+// By default, fields are optional. Field is required only when `required` tag
 // was explicitly provided with "true" value. In other cases function will return
 // `false` even if value for `required` tag is invalid.
 func isRequired(fType reflect.StructField) bool {
@@ -106,7 +105,7 @@ func isRequired(fType reflect.StructField) bool {
 
 	if len(v) == 0 || !isBool(v) {
 		return false
-	} 
+	}
 	isReq, _ := strconv.ParseBool(v)
 
 	return isReq
@@ -115,9 +114,7 @@ func isRequired(fType reflect.StructField) bool {
 // isBool returns information if given string is a proper string version of
 // the boolean value.
 //
-// This function returns `true` only for the following values:
-// - true
-// - false
+// This function returns `true` only for the following values: `true`, `false`.
 func isBool(v string) bool {
 	v = strings.ToLower(v)
 

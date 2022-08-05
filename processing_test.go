@@ -8,10 +8,10 @@ import (
 )
 
 type TestConfig struct {
-	Debug     bool   `env:"DEBUG" default:"true"`
 	Host      string `env:"HOST"`
-	Port      int
 	SecretKey string `required:"true"`
+	Port      int
+	Debug     bool `env:"DEBUG" default:"true"`
 }
 
 func TestProcess(t *testing.T) {
@@ -52,8 +52,8 @@ func TestProcess(t *testing.T) {
 
 func TestProcess_DifferentTypes(t *testing.T) {
 	tests := []struct {
-		name       string
 		obj        interface{}
+		name       string
 		shouldFail bool
 	}{
 		{name: "String", obj: "object", shouldFail: true},
@@ -80,15 +80,15 @@ func TestProcess_DifferentTypes(t *testing.T) {
 
 func TestGetEnv(t *testing.T) {
 	conf := struct {
-		Debug     bool
 		SecretKey string
 		Host      string `env:"HOST"`
 		Port      int    `env:"APP_PORT"`
+		Debug     bool
 	}{}
 	tests := []struct {
 		name     string
-		fieldIdx int
 		expected string
+		fieldIdx int
 	}{
 		{name: "No tag & Simple", fieldIdx: 0, expected: "DEBUG"},
 		{name: "No tag & CamelCase", fieldIdx: 1, expected: "SECRET_KEY"},
@@ -108,15 +108,15 @@ func TestGetEnv(t *testing.T) {
 
 func TestGetDefault(t *testing.T) {
 	conf := struct {
-		Debug     bool `default:"true"`
 		SecretKey string
 		Host      string `default:"localhost"`
 		AppName   string `default:""`
+		Debug     bool   `default:"true"`
 	}{}
 	tests := []struct {
 		name       string
-		fieldIdx   int
 		expected   string
+		fieldIdx   int
 		hasDefault bool
 	}{
 		{name: "Bool default", fieldIdx: 0, expected: "true", hasDefault: true},
@@ -140,10 +140,10 @@ func TestGetDefault(t *testing.T) {
 
 func TestIsRequired(t *testing.T) {
 	conf := struct {
-		Debug     bool
 		SecretKey string `required:"true"`
 		Host      string `required:"false"`
 		Port      int    `required:"invalid"`
+		Debug     bool
 	}{}
 	tests := []struct {
 		name     string
