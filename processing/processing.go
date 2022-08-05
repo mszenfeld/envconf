@@ -1,4 +1,4 @@
-package envconf
+package processing
 
 import (
 	"errors"
@@ -9,8 +9,8 @@ import (
 	"github.com/fatih/camelcase"
 )
 
-// fieldInfo is a representation of the struct field.
-type fieldInfo struct {
+// FieldInfo is a representation of the struct field.
+type FieldInfo struct {
 	Name       string
 	Env        string
 	Default    string
@@ -23,11 +23,11 @@ var ErrInvalidObjectType = errors.New("invalid object type")
 // Process extracts information about fields that make up the provided object.
 //
 // If object is not a pointer to the struct, this function will return an error.
-func Process(obj interface{}) ([]fieldInfo, error) {
+func Process(obj interface{}) ([]FieldInfo, error) {
 	v := reflect.ValueOf(obj)
 
 	if err := validateObjType(v); err != nil {
-		return []fieldInfo{}, err
+		return []FieldInfo{}, err
 	}
 
 	elem := v.Elem()
@@ -49,8 +49,8 @@ func validateObjType(v reflect.Value) error {
 }
 
 // processFields extracts information about fields from the provided arguments.
-func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
-	fieldInfos := make([]fieldInfo, 0, v.NumField())
+func processFields(v reflect.Value, t reflect.Type) ([]FieldInfo, error) {
+	fieldInfos := make([]FieldInfo, 0, v.NumField())
 
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
@@ -62,7 +62,7 @@ func processFields(v reflect.Value, t reflect.Type) ([]fieldInfo, error) {
 		}
 
 		def, hasDef := fType.Tag.Lookup("default")
-		fi := fieldInfo{
+		fi := FieldInfo{
 			Name:       fType.Name,
 			Env:        getEnv(fType),
 			Default:    def,

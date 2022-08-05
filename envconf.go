@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/mszenfeld/envconf/processing"
 )
 
 var ErrUnsupportedType = errors.New("unsupported field type")
@@ -23,7 +25,7 @@ func NewLoader() *Loader {
 // Load loads values from the environment variables and pass them to the
 // provided object.
 func (l *Loader) Load(obj interface{}) error {
-	fieldInfos, err := Process(obj)
+	fieldInfos, err := processing.Process(obj)
 	if err != nil {
 		return err
 	}
@@ -48,7 +50,7 @@ func (l *Loader) Prefix() string {
 }
 
 // loadField gets a value of the environment variable and sets it to the field.
-func (l *Loader) loadField(obj interface{}, fi fieldInfo) error {
+func (l *Loader) loadField(obj interface{}, fi processing.FieldInfo) error {
 	f := reflect.ValueOf(obj).Elem().FieldByName(fi.Name)
 
 	v, err := getEnvValue(l.prefix, fi)
@@ -70,7 +72,7 @@ func (l *Loader) loadField(obj interface{}, fi fieldInfo) error {
 //
 // If value is required but environment variable does not exist, function will
 // return an error.
-func getEnvValue(prefix string, fi fieldInfo) (string, error) {
+func getEnvValue(prefix string, fi processing.FieldInfo) (string, error) {
 	envName := fi.Env
 	if len(prefix) > 0 {
 		envName = fmt.Sprintf("%s_%s", prefix, envName)
