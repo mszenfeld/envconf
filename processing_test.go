@@ -69,10 +69,11 @@ func TestProcess_DifferentTypes(t *testing.T) {
 
 			if tt.shouldFail {
 				assert.ErrorIs(t, ErrInvalidObjectType, err)
+				assert.Empty(t, info)
 			} else {
 				assert.Nil(t, err)
+				assert.NotEmpty(t, info)
 			}
-			assert.Empty(t, info)
 		})
 	}
 }
