@@ -1,6 +1,7 @@
 package envconf
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -73,6 +74,8 @@ func TestSetFieldValue(t *testing.T) {
 		Host  string
 		Port  int
 		Debug bool
+		Procs uint8
+		Ratio float32
 	}{}
 	tests := []struct {
 		expectedValue interface{}
@@ -83,6 +86,8 @@ func TestSetFieldValue(t *testing.T) {
 		{name: "String", fieldName: "Host", value: "localhost", expectedValue: "localhost"},
 		{name: "Integer", fieldName: "Port", value: "1337", expectedValue: int64(1337)},
 		{name: "Boolean", fieldName: "Debug", value: "true", expectedValue: true},
+		{name: "Unsigned Integer", fieldName: "Procs", value: "3", expectedValue: uint64(3)},
+		{name: "Float", fieldName: "Ratio", value: "50.23", expectedValue: float64(50.23)},
 	}
 
 	for _, tt := range tests {
@@ -91,7 +96,15 @@ func TestSetFieldValue(t *testing.T) {
 			err := setFieldValue(f, tt.value)
 
 			assert.Nil(t, err)
-			assert.Equal(t, tt.expectedValue, getFieldValue(f))
+
+			if f.Kind() == reflect.Float32 {
+				got, _ := getFieldValue(f).(float64)
+				expected, _ := tt.expectedValue.(float64)
+
+				assert.True(t, math.Abs(expected-got) <= 1e-6)
+			} else {
+				assert.Equal(t, tt.expectedValue, getFieldValue(f))
+			}
 		})
 	}
 }
@@ -156,12 +169,14 @@ func TestLoader_loadField(t *testing.T) {
 	t.Setenv("PORT", "1337")
 	t.Setenv("DEBUG", "true")
 	t.Setenv("PROCS", "3")
+	t.Setenv("MAX_WORKERS", "8")
 
 	c := struct {
-		Host  string
-		Port  int
-		Debug bool
-		Procs int8
+		Host       string
+		Port       int
+		Debug      bool
+		Procs      int8
+		MaxWorkers uint16
 	}{}
 	l := NewLoader()
 	tests := []struct {
@@ -189,6 +204,11 @@ func TestLoader_loadField(t *testing.T) {
 			fi:       processing.FieldInfo{Name: "Procs", Env: "PROCS"},
 			expected: int64(3),
 		},
+		{
+			name:     "UInteger16",
+			fi:       processing.FieldInfo{Name: "MaxWorkers", Env: "MAX_WORKERS"},
+			expected: uint64(8),
+		},
 	}
 
 	for _, tt := range tests {
@@ -208,6 +228,12 @@ func getFieldValue(f reflect.Value) any {
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return f.Int()
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return f.Uint()
+
+	case reflect.Float32, reflect.Float64:
+		return f.Float()
 
 	case reflect.Bool:
 		return f.Bool()

@@ -113,6 +113,30 @@ func setFieldValue(f reflect.Value, s string) error {
 		}
 		f.SetInt(v)
 
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		// If string is empty use zero
+		if len(s) == 0 {
+			s = "0"
+		}
+
+		v, err := strconv.ParseUint(s, 0, f.Type().Bits())
+		if err != nil {
+			return err
+		}
+		f.SetUint(v)
+
+	case reflect.Float32, reflect.Float64:
+		// If string is empty use zero
+		if len(s) == 0 {
+			s = "0"
+		}
+
+		v, err := strconv.ParseFloat(s, f.Type().Bits())
+		if err != nil {
+			return err
+		}
+		f.SetFloat(v)
+
 	case reflect.Bool:
 		v, err := strconv.ParseBool(s)
 		if err != nil {
