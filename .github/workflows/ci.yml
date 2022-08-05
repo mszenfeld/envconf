@@ -22,7 +22,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    needs: golangci
+    needs: golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
