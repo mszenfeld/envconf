@@ -71,10 +71,39 @@ func main() {
 }
 ```
 
+## Tags
+
+`envconf` allows you to use the following tags:
+- `env`
+- `default`
+- `required`
+
+```go
+type Config struct {
+  Host  string `default:"localhost"`
+  Port  int `required:"true"`
+  Debug bool `env:"ENABLE_DEBUG" default:"false"`
+}
+```
+
+### `env`
+
+This tag overrides the default environment variable name of the struct field.
+
+### `default`
+
+The tag value will be used as a field's value if the environment variable associated with the field does not exist.
+
+### `required`
+
+The available values for this tag are only "true" and "false". If field 
+is marked as required and environment variable does not exist, loader 
+will return an error. By default, fields are optional.
+
 ## Supported Types
 `envconf` has support for the following types:
-- string
-- int, int8, int16, int32, int64
-- uint, uint8, uint16, uint32, uint64
-- float32, float64
-- bool
+- `string`
+- `int`, `int8`, `int16`, `int32`, `int64`
+- `uint`, `uint8`, `uint16`, `uint32`, `uint64`
+- `float32`, `float64`
+- `bool`
